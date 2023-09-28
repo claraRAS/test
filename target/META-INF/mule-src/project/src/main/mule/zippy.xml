@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:vm="http://www.mulesoft.org/schema/mule/vm"
+	xmlns:solace="http://www.mulesoft.org/schema/mule/solace"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/solace http://www.mulesoft.org/schema/mule/solace/current/mule-solace.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+	<flow name="zippyREST" doc:id="3d287b59-9443-496b-a752-633f4662a5fd" >
+		<http:listener doc:name="Listener" doc:id="113bcc12-d0f8-4e6d-a3dc-c0104b5c3abb" config-ref="HTTP_Listener_config" path="/zippy" allowedMethods="POST"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	'user_id': payload.id, &#10;	'message': 'success - zippy',&#10;	'status': 'success'&#10;}]" doc:name="Set Payload" doc:id="4038ca69-b317-4ea5-b6aa-c6aa91128595" />
+	</flow>
+	<flow name="zippySolace" doc:id="eb8d9ee4-6532-406e-baf2-164e9a7b93af" >
+		<solace:queue-listener address="zippy" doc:name="Guaranteed Endpoint Listener" doc:id="2458376b-c573-40ec-8bb4-d680ad276571" config-ref="Solace_PubSub__Connector_Config" addTopicSubscription="creation"/>
+		<logger level="INFO" doc:name="Logger" doc:id="46632f7f-446d-4b14-88c7-ce207b57fbd5" message="#['zippySolace: '++ write(payload, 'application/json')]"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	'user_id': payload.user_id,&#10;	'subscriber': 'zippy',&#10;	'status': 'success'&#10;}]" doc:name="Set Payload" doc:id="c3107b98-4cf8-4518-aa74-d16b6f907448" />
+<!-- [STUDIO:"Publish"]		<solace:publish address="confirmation" doc:name="Publish" doc:id="e8fdd0c0-51db-445e-8458-977a0e7532a2" config-ref="Solace_PubSub__Connector_Config"/> [STUDIO] -->
+	</flow>
+</mule>

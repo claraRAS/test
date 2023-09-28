@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:solace="http://www.mulesoft.org/schema/mule/solace"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/solace http://www.mulesoft.org/schema/mule/solace/current/mule-solace.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<flow name="wortenREST" doc:id="3d287b59-9443-496b-a752-633f4662a5fd" >
+		<http:listener doc:name="Listener" doc:id="113bcc12-d0f8-4e6d-a3dc-c0104b5c3abb" config-ref="HTTP_Listener_config" path="/worten" allowedMethods="POST"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	'user_id': payload.id, &#10;	'message': 'success - worten',&#10;	'status': 'success'&#10;}]" doc:name="Set Payload" doc:id="4038ca69-b317-4ea5-b6aa-c6aa91128595" />
+	</flow>
+	<flow name="wortenFlow" doc:id="81de9d39-8df3-4a99-bfc0-f99f1def9a69" >
+		<solace:queue-listener doc:name="Guaranteed Endpoint Listener" doc:id="39e84bb4-3ad3-435e-9da4-e2668f0814e0" config-ref="Solace_PubSub__Connector_Config" address="worten" addTopicSubscription="creation"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	'user_id': payload.user_id,&#10;	'subscriber': 'zippy',&#10;	'status': 'success'&#10;}]" doc:name="Set Payload" doc:id="6aef4ff0-7587-4874-ba45-99b3cb5a3048" />
+		<solace:publish address="confirmation/worten" doc:name="Publish" doc:id="d9e16acb-d25a-4768-a08b-16374cfc8174" config-ref="Solace_PubSub__Connector_Config" delivery-mode="PERSISTENT"/>
+	</flow>
+</mule>

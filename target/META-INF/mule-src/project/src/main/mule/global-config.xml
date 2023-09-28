@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:solace="http://www.mulesoft.org/schema/mule/solace"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/solace http://www.mulesoft.org/schema/mule/solace/current/mule-solace.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="93b23fba-e3e4-464f-b118-8a9a022a1372" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.database}" />
+	</db:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="d8cbe430-cd32-4c1b-adab-fabd155a2b1c" file="properties/${env}.properties" />
+	<global-property doc:name="Global Property" doc:id="46f89265-0109-430b-901a-f6dc81367e67" name="env" value="local" />
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="c5d66ed0-863d-4179-b9da-c06ac405c95f">
+		<http:request-connection host="localhost" port="${http.port}" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="89237bee-0fe9-436e-92e8-a3d820804076">
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<configuration doc:name="Configuration" doc:id="e25a26d6-147d-4595-88ae-d5056f03cdc6" defaultErrorHandler-ref="global-configError_Handler" />
+	<solace:config name="Solace_PubSub__Connector_Config" doc:name="Solace PubSub+ Connector Config" doc:id="cd0af9a6-9864-4984-8668-c8d02e5d6921" >
+		<solace:connection clientUserName="admin" password="admin" brokerHost="localhost:55555" />
+	</solace:config>
+	<solace:config name="Solace_PubSub_cloud" doc:name="Solace PubSub+ Connector Config" doc:id="c6eca3be-8870-4d6a-9959-8d43c9844b04" >
+		<solace:connection clientUserName="solace-cloud-client" password="28uplv5c9oun3dvcj9bjcj266c" msgVPN="poc-sonae" brokerHost="tcps://mr-connection-8a1x52dowhl.messaging.solace.cloud:55443" />
+	</solace:config>
+	<error-handler name="global-configError_Handler" doc:id="2b4bd1cc-64e3-4da7-8ab1-1bc3ff3c0aed" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e21f054e-1bed-4284-90f9-8cec05cb1bf1" >
+			<logger level="INFO" doc:name="Logger" doc:id="77b68d91-9aaa-4b16-88b9-c22975a00ece" message="error"/>
+		</on-error-propagate>
+	</error-handler>
+</mule>

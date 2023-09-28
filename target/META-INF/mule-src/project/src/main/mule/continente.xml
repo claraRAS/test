@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:solace="http://www.mulesoft.org/schema/mule/solace"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/solace http://www.mulesoft.org/schema/mule/solace/current/mule-solace.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<flow name="continenteREST" doc:id="3d287b59-9443-496b-a752-633f4662a5fd" >
+		<http:listener doc:name="Listener" doc:id="113bcc12-d0f8-4e6d-a3dc-c0104b5c3abb" config-ref="HTTP_Listener_config" path="/continente" allowedMethods="POST"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;{&#10;	'user_id': payload.id, &#10;	'message': 'success - continente',&#10;	'status': 'error'&#10;}]" doc:name="Set Payload" doc:id="4038ca69-b317-4ea5-b6aa-c6aa91128595" />
+	</flow>
+	<flow name="continenteFlow" doc:id="355d3412-a5eb-445d-8110-043a2ab17f1c" >
+		<solace:queue-listener address="continente" doc:name="Guaranteed Endpoint Listener" doc:id="0998e8f6-d181-479a-8a7c-609a3e349529" config-ref="Solace_PubSub__Connector_Config" addTopicSubscription="creation"/>
+		<set-payload value="#[%dw 2.0 &#10;output application/json&#10;---&#10;&#10;{&#10;	'user_id': payload.user_id,&#10;	'subscriber': 'continente',&#10;	'status': 'success'&#10;}]" doc:name="Set Payload" doc:id="686753d7-b069-4a0b-8864-c80704ad20a0" />
+		<solace:publish doc:name="Publish" doc:id="d7f78a35-ae6d-4f01-a69e-b78fcf598e53" config-ref="Solace_PubSub__Connector_Config" address="confirmation"/>
+	</flow>
+</mule>

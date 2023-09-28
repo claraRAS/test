@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:solace="http://www.mulesoft.org/schema/mule/solace"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/solace http://www.mulesoft.org/schema/mule/solace/current/mule-solace.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd">
+	<sub-flow name="sendNotificationsREST" doc:id="a4372f45-f405-4302-b9ac-325538b40928" >
+		<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'user_id': vars.user.id, &#10;	'message': 'user created',&#10;	'status': 'processing'&#10;}]" doc:name="Set Payload" doc:id="05680ffe-81e8-4f38-9512-326159c2a117" />
+		<http:request method="POST" doc:name="Request" doc:id="ab490ae8-ab4d-4d6d-a7f7-9857f038fdf4" config-ref="HTTP_Request_configuration" path="/worten" target="wortenStatus" targetValue="#[payload.status]"/>
+		<http:request method="POST" doc:name="Request" doc:id="fa80733a-3383-4c4d-9322-7c43ed659e18" config-ref="HTTP_Request_configuration" path="/zippy" target="zippyStatus" targetValue="#[payload.status]"/>
+		<http:request method="POST" doc:name="Request1" doc:id="25a16ce9-6fbc-4cef-9641-21ff1df9bce1" config-ref="HTTP_Request_configuration" path="/continente" target="continenteStatus" targetValue="#[payload.status]"/>
+		<choice doc:name="Choice" doc:id="7044df29-8d4c-41fa-bd41-8a724df9414c" >
+			<when expression="#[vars.zippyStatus == 'error' or vars.continenteStatus == 'error' or vars.wortenStatus == 'error']">
+				<ee:transform doc:name="Transform Message" doc:id="23b89110-959d-4c71-befb-f857f8a0ba33" >
+					<ee:message >
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="user" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'id': vars.user.id,
+	'status':'error',
+	'status_zippy': vars.zippyStatus,
+	'status_continente': vars.continenteStatus,
+	'status_worten': vars.wortenStatus
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform Message" doc:id="93f457a8-62f9-4823-b083-26fa21df27cc" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable variableName="user" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	'id': vars.user.id,
+	'status':'success',
+	'status_zippy': vars.zippyStatus,
+	'status_continente': vars.continenteStatus,
+	'status_worten': vars.wortenStatus
+}]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<flow-ref doc:name="updateTables" doc:id="59241493-9850-4a4e-9880-4221f30b0316" name="updateTables"/>
+	</sub-flow>
+	<sub-flow name="updateTables" doc:id="ea1dea7c-d94a-46aa-a6d3-11a92660d5f2" >
+		<db:update doc:name="Update" doc:id="3bd38388-eace-4afe-bc76-102884581665" config-ref="Database_Config">
+						<db:sql><![CDATA[UPDATE users set status=:user_status where id =:user_id]]></db:sql>
+						<db:input-parameters><![CDATA[#[{user_status: vars.user.status, user_id: vars.user.id}]]]></db:input-parameters>
+					</db:update>
+		<choice doc:name="Choice" doc:id="c0094683-dc41-4976-a2ea-e68864c77856" >
+			<when expression="#[vars.user.status == 'processing' and vars.user.status_worten == 'pending' and vars.user.status_continente == 'pending' and vars.user.status_zippy == 'pending']">
+				<db:insert doc:name="Insert" doc:id="a04350ee-5a85-4999-8744-30235c3e830d" config-ref="Database_Config" target="notification">
+						<db:sql><![CDATA[insert into notifications values (:user_id,CURRENT_TIMESTAMP() ,'created', 'pending', 'pending', 'pending', 'pending');]]></db:sql>
+			<db:input-parameters><![CDATA[#[{user_id: vars.user.id}]]]></db:input-parameters>
+					
+</db:insert>
+				<set-payload value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'message': 'new user added',&#10;	'user_id': vars.user.id,&#10;	'username': vars.user.username,&#10;	'created_date': vars.user.created_at&#10;}]" doc:name="Set Payload" doc:id="2c41ac42-52d8-43cf-9dc7-d21436efda94" />
+				<solace:publish address="creation" doc:name="Publish" doc:id="4fbe58e3-4808-4b35-8dd6-e5a232c727eb" config-ref="Solace_PubSub__Connector_Config" />
+				<db:update doc:name="Update" doc:id="17910d09-8a06-41a4-8e24-bcba6bef2a59" config-ref="Database_Config" >
+					<db:sql ><![CDATA[UPDATE Notifications set status=:status, status_zippy=:status_zippy,
+status_continente=:status_continente, status_worten=:status_worten where user_id =:user_id]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	status: 'processing', 
+	user_id: vars.user.id, 
+	status_zippy: 'processing',//vars.user.status_zippy,
+	status_continente: 'processing',//vars.user.status_continente,
+	status_worten: 'processing'//vars.user.status_worten
+}]]]></db:input-parameters>
+				</db:update>
+			</when>
+			<otherwise >
+				<db:update doc:name="Update" doc:id="73d17bed-f8b5-456b-84bf-79c712305fd4" config-ref="Database_Config">
+					<db:sql><![CDATA[UPDATE Notifications set status=:status, status_zippy=:status_zippy,
+status_continente=:status_continente, status_worten=:status_worten where user_id =:user_id]]></db:sql>
+					<db:input-parameters><![CDATA[#[{
+	status: vars.user.status, 
+	user_id: vars.user.id, 
+	status_zippy: vars.user.status_zippy,
+	status_continente: vars.user.status_continente,
+	status_worten: vars.user.status_worten
+}]]]></db:input-parameters>
+				</db:update>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="notification-managerFlow" doc:id="8bea2313-d37a-4f25-94f1-bd734486d94c" initialState="started">
+		<scheduler doc:name="Scheduler" doc:id="80cfa0d6-a27f-41fd-bdc4-ffa365c2b575" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="1" timeUnit="MINUTES"/>
+			</scheduling-strategy>
+		</scheduler>
+		<db:select doc:name="Select" doc:id="9bbd0325-dd54-4442-9ae1-a78ad8c63d7b" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from poc_sonae.users where status='pending']]></db:sql>
+		</db:select>
+		<choice doc:name="Choice" doc:id="b9ca4c5d-b4a7-4682-9382-875f81267a4a" >
+			<when expression="#[sizeOf(payload)&gt;0]">
+				<foreach doc:name="For Each" doc:id="e366ecab-9ebe-492a-be62-6cd35d73b017" >
+					<set-variable value="#[%dw 2.0 &#10;output application/json &#10;---&#10;{&#10;	'id': payload.id,&#10;	'username': payload.username,&#10;	'created_at': payload.created_at,&#10;	'status': 'processing',&#10;	'status_zippy': 'pending',&#10;	'status_continente': 'pending',&#10;	'status_worten': 'pending'&#10;}]" doc:name="user" doc:id="7e86edfd-aa8e-4800-b93b-1ac600621669" variableName="user" />
+					<flow-ref doc:name="updateTables" doc:id="7d6a0e40-5ab3-4f1d-9fdf-30657a1801cc" name="updateTables" />
+				</foreach>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="No user logger " doc:id="cafbfb1e-8c95-4b48-a451-3c8a5ee88c02" message="There is no users pending "/>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="notification-managerFlow1" doc:id="5adb6c37-49e3-4db1-9b3d-dc6c252eac45" >
+		<solace:queue-listener address="notification-manager" doc:name="Guaranteed Endpoint Listener" doc:id="3e099360-a6ca-45a5-ba65-8e47cebb90aa" config-ref="Solace_PubSub__Connector_Config" addTopicSubscription="/confirmation"/>
+		<set-variable value="#[payload]" doc:name="message" doc:id="85279bdf-621c-4eb7-9971-a0d81f3762e1" variableName="message"/>
+		<db:select doc:name="Select" doc:id="9949e010-38bc-48e6-8ae1-cb15e4806b2f" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * from notifications where user_id=:id]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{id: payload.user_id}]]]></db:input-parameters>
+		</db:select>
+		<logger level="INFO" doc:name="Logger" doc:id="830341c9-d21a-4c41-82a9-eff5e234773d" message="#[vars.user]"/>
+		<set-variable value="#[%dw 2.0&#10;output application/json&#10;---&#10;{&#10;	'id': payload[0].user_id,&#10;	'status': payload[0].status,&#10;	'status_zippy': if(vars.message.subscriber == 'zippy') (vars.message.status) else (payload[0].status_zippy),&#10;	'status_continente': if(vars.message.subscriber == 'continente') (vars.message.status) else (payload[0].status_continente),&#10;	'status_worten': if(vars.message.subscriber == 'worten') (vars.message.status) else (payload[0].status_worten),&#10;}]" doc:name="user" doc:id="24a23960-4c3e-425a-a481-9c9d1445e296" variableName="user"/>
+		<ee:transform doc:name="Transform Message1" doc:id="9b5d80eb-87c7-493d-8e95-102bfc02ddb9">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="user"><![CDATA[%dw 2.0
+import * from dw::util::Values
+output application/json
+---
+vars.user update 'status' with (
+	if(vars.user.status_zippy == 'error' or 
+		vars.user.status_continente == 'error' or
+		vars.user.status_worten == 'error'
+	)
+	'error' else if(vars.user.status_zippy == 'success' and
+		vars.user.status_continente == 'success' and
+		vars.user.status_worten == 'success'
+	)
+	'success' else 'processing'
+)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="updateTables" doc:id="18aea6ca-6c99-4a9b-904a-4880eda3e517" name="updateTables" />
+	</flow>
+</mule>
