@@ -3,11 +3,11 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.mycompany</groupId>
-	<artifactId>project</artifactId>
+	<artifactId>poc-sonae-project</artifactId>
 	<version>1.0.0-SNAPSHOT</version>
 	<packaging>mule-application</packaging>
 
-	<name>project</name>
+	<name>poc-sonae</name>
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -40,7 +40,18 @@
 							<artifactId>activemq-broker</artifactId>
 						</sharedLibrary>
 					</sharedLibraries>
-				</configuration>
+				<cloudHubDeployment>
+					<uri>https://anypoint.mulesoft.com</uri>
+					<muleVersion>4.4.0</muleVersion>
+					<username>clara-severino</username>
+					<password>Vhx7ctrR@9zYqNT</password>
+					<applicationName>CICD-PoC-SONAE</applicationName>
+					<environment>Sandbox</environment>
+					<workers>1</workers>
+					<workerType>Micro</workerType>
+					<objectStoreV2>true</objectStoreV2>
+				</cloudHubDeployment>
+				</configuration>	
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
