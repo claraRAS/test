@@ -1,0 +1,8 @@
+%dw 2.0
+
+type auto_ea1dea7c_d94a_46aa_a6d3_11a92660d5f2_Output_Variables_notification = {|
+  affectedRows?: Number, 
+  generatedKeys?: { _?: Number }
+|} {"typeAlias": "StatementResult",
+"typeId": "org.mule.extension.db.api.StatementResult"}
+
